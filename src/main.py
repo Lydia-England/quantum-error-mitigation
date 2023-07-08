@@ -1,3 +1,7 @@
+#################
+###  IMPORTS  ###
+#################
+
 # Import My Modules
 from twirl import load_pauli_twirling_sets as load_twrl
 from twirl import pauli_twirling as twrl
@@ -38,5 +42,26 @@ backend = BasicAer.get_backend('unitary_simulator')
 from qiskit.quantum_info import  Kraus, SuperOp
 from qiskit_aer          import  AerSimulator
 from qiskit_aer.noise    import (NoiseModel, QuantumError, ReadoutError, pauli_error, depolarizing_error, thermal_relaxation_error)
+
+
+#####################
+###  DEFINITIONS  ###
+#####################
+
+#--- Define Angles ---#
+theta_h = 0
+theta_J = -pi/2
+
+#--- Number of Qubits ---#
+n = 14
+
+#--- Define Gates ---#
+RX_h  = RXGate(theta_h)    # RX(theta h) Gate
+RX_h.label  = r'$RX_h$'
+SY    = YGate().power(1/2) # Square Root of Y Gate
+SY.label    = r'$\sqrt{Y}$'
+SYDG  = SY.adjoint()       # SY Gate Adjoint
+SYDG.label  = r'$\sqrt{Y}^\dagger$'
+SDG   = SdgGate()          # S Gate Adjoint
 
 
