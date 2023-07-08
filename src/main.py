@@ -5,6 +5,9 @@
 # Import My Modules
 from twirl import load_pauli_twirling_sets as load_twrl
 from twirl import pauli_twirling as twrl
+from components import rzz
+from components import get_unitary
+# from noise import t1t2_thermal_relax_model
 from data  import twirling_groups
 
 # Import General Modules
