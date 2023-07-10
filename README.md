@@ -138,7 +138,7 @@ R_{ZZ}\left(\theta\right) = e^\left(-i\frac{\theta}{2} Z\otimes Z\right) =
 \end{pmatrix}
 ```
 
-In (Kim, et. al.), only the case where `$\theta_J = -\pi/2$` is considered. 
+In (Kim, et. al.), only the case where $`\theta_J = -\pi/2`$ is considered. 
 Thus, the ZZ rotation can be constructed entirely from single qubit gates and one CNOT gate. 
 
 
