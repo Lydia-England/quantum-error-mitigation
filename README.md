@@ -121,7 +121,7 @@ CNOT =
   1 & 0 & 0 & 0 \\
   0 & 1 & 0 & 0 \\
   0 & 0 & 0 & 1 \\
-  0 & 0 & 1 & 0 \\
+  0 & 0 & 1 & 0 
 \end{pmatrix}
 ```
 
@@ -134,7 +134,7 @@ R_{ZZ}\left(\theta\right) = e^\left(-i\frac{\theta}{2} Z\otimes Z\right) =
     e^{-i\frac{\theta}{2}} & 0 & 0 & 0 \\
     0 & e^{i\frac{\theta}{2}} & 0 & 0 \\
     0 & 0 & e^{i\frac{\theta}{2}} & 0 \\
-    0 & 0 & 0 & e^{-i\frac{\theta}{2}} \\
+    0 & 0 & 0 & e^{-i\frac{\theta}{2}} 
 \end{pmatrix}
 ```
 
