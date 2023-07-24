@@ -1,22 +1,43 @@
+########################################################################
+###  Numerical Simulation of Probabilistic Error Cancellation (PEC)  ###
+########################################################################
+
+#########################
+###  IMPORT PACKAGES  ###
+#########################
+
 import random 
-import numpy as np
+import numpy      as np
 import matplotlib as mpl
 
 # from qiskit.quantum_info import DensityMatrix
-from qiskit.providers.aer.noise import NoiseModel
-from qiskit.providers.aer.noise import depolarizing_error
-from qiskit import (QuantumCircuit, ClassicalRegister, QuantumRegister, transpile, BasicAer)
-from qiskit.circuit.library import (IGate, XGate, YGate, ZGate, HGate, TGate, SGate, CXGate)
-from qiskit.visualization import circuit_drawer
-from qiskit.result import Result
-from qiskit.quantum_info import Statevector
+from qiskit.providers.aer.noise import  NoiseModel
+from qiskit.providers.aer.noise import  depolarizing_error
+from qiskit.quantum_info        import  Statevector
+from qiskit.circuit.library     import (IGate, XGate, YGate, ZGate, HGate, TGate, SGate, CXGate)
+from qiskit.visualization       import  circuit_drawer
+from qiskit.result              import  Result
+from qiskit                     import (QuantumCircuit, ClassicalRegister, QuantumRegister, transpile, BasicAer)
 
 #==== Simulation Parameters ====#
-d         = 20     # number of qubits
-n         = 6     # circuit depth
-epsilon   = 0.01  # error rate
-M         = 4000  # total number of runs
-gamma_b   = (((1+epsilon/2)/(1-epsilon))**(n*d/2)*(((1+7*epsilon/8)/(1-epsilon))**(n*d/4)))  # simulation overhead
+d       = 20    # number of qubits
+n       = 6     # circuit depth
+epsilon = 0.01  # error rate
+M       = 4000  # total number of runs
+
+# Calculate Simulation Overhead
+def calc_sim_overhead(n, d, epsilon):
+    num1    = 1 + ( epsilon / 2 )
+    num2    = 1 + ( (7 * epsilon) / 8 )
+    denom   = 1 - epsilon
+    exp1    = (n * d) / 2
+    exp2    = (n * d) / 2
+    part1   = (num1 / denom) ** exp1
+    part2   = (num2 / denom) ** exp2
+    gamma_b = part1 * part2
+    return gamma_b
+
+# print \gamma_{\beta}
 print('gamma_b = ', gamma_b)
 
 #==== Instances of Gates ====#
