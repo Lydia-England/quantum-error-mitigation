@@ -11,15 +11,14 @@ import statistics
 import numpy      as np
 import matplotlib as mpl
 
-# from qiskit.quantum_info import DensityMatrix
-from qiskit.providers.aer.noise import  NoiseModel
-from qiskit.providers.aer.noise import  depolarizing_error
-from qiskit.quantum_info        import  Statevector
-from qiskit.circuit.library     import (IGate, XGate, YGate, ZGate, HGate, TGate, SGate, CXGate)
-from qiskit.visualization       import  circuit_drawer
-from qiskit.result              import  Result
-from qiskit                     import (QuantumCircuit, ClassicalRegister, QuantumRegister, transpile, BasicAer)
-
+import qiskit_aer.noise           as      noise
+from   qiskit.providers.aer.noise import (NoiseModel, depolarizing_error)
+from   qiskit_aer                 import  AerSimulator
+from   qiskit.quantum_info        import (Statevector, DensityMatrix)
+from   qiskit.circuit.library     import (IGate, XGate, YGate, ZGate, HGate, TGate, SGate, CXGate)
+from   qiskit.visualization       import (circuit_drawer, plot_histogram)
+from   qiskit.result              import  Result
+from   qiskit                     import (QuantumCircuit, ClassicalRegister, QuantumRegister, transpile, BasicAer, Aer, execute)
 
 
 ##############################
@@ -129,14 +128,14 @@ def get_projector_geq_med(psi):
 ###  DEFINE VARIABLES  ###
 ##########################
 
-#==== Simulation Parameters ====#
+#==== Simulation Parameters ==============================#
 d       = 20    # number of qubits
 n       = 6     # circuit depth
 epsilon = 0.01  # error rate
 M       = 4000  # total number of runs
 gamma_b = calc_sim_overhead(n, d, epsilon) # simulation overhead
 
-#==== Instances of Gates ====#
+#==== Instances of Gates =================================#
 I        = IGate()   # Identity    gate
 I.label  = r'I'      # Identity    gate label "I"
 X        = IGate()   # X (pauli)   gate
@@ -154,48 +153,59 @@ T.label  = r'T'      # T (Z**0.25) gate label "T"
 CX       = CXGate()  # CX (CNOT)   gate
 CX.label = r'CNOT'   # CX (CNOT)   gate label "CNOT"
 
-#==== List of Gates (to build ideal circuit) ====#
+#==== List of Gates (to build ideal circuit) =============#
 gate_list       = [I, H, S, T]           # list of gates which will be randomly added to quantum circuit 
 gate_list_names = ['id', 'h', 's', 't']  # list of gate identifiers corresponding to gates in gate_list 
 paulis          = [I, X, Y, Z]           # list of pauli gates 
 paulis_names    = ['id', 'x', 'y', 'z']  # list of gate identifiers corresponding to pauli gates
 
 
-###############################
-###  BUILD QUANTUM CIRCUIT  ###
-###############################
+#####################################
+###  EXECUTION SECTION  -- IDEAL  ###
+#####################################
+
+#==== Build quantum circuit ==============================#
 """
 Build quantum circuit with function get_qc_ub().
 Quantum circuit has n qubits, d layers.
 Select 1-qubit gates from list: gate_list.
 """
-qc = get_qc_ub(n, d, gate_list)      # create ideal quantum circuit 
-qc.draw('mpl')                       # draw quantum circuit using matplotlib rendering
+qc = get_qc_ub(n, d, gate_list)        # create ideal quantum circuit 
+qc.draw('mpl')                         # draw quantum circuit using matplotlib rendering
 
+#==== Evolve Statevector by quantum circuit ==============#
+psi = Statevector.from_int(0, 2**n)    # set initial simulator state to ground state using from_int
+psi = psi.evolve(qc)                   # evolve the state by the quantum circuit
+psi.draw('latex')                      # draw using latex rendering
 
-###############################################
-###  EVOLVE STATEVECTOR BY QUANTUM CIRCUIT  ###
-###############################################
-psi = Statevector.from_int(0, 2**n)  # set initial simulator state to ground state using from_int
-psi = psi.evolve(qc)                 # evolve the state by the quantum circuit
-psi.draw('latex')                    # draw using latex
+#==== Get projector operator A ===========================#
+A = get_projector_geq_med(psi)         # get projector A from statevector psi
 
-
-##################################
-###  GET PROJECTOR OPERATOR A  ###
-##################################
-
-A = get_projector_geq_med(psi)       # get projector A from statevector psi
+#==== Calculate ideal expectation values =================#
+eval_ideal = psi.expectation_value(A)  # get ideal expectation value from projector A w.r.t. statevector psi
 
 
 
+#########################################
+###  EXECUTION SECTION  -- ADD NOISE  ###
+#########################################
+
+#===== Add statevector 'screenshot' to end of circuit ====#
+qc.save_statevector()                                          # add save statevector checkpoint to end of qc
+
+#==== Build depolarizing noise model =====================#
+dk_noise_model = get_dk_noise(gate_list_names,'CNOT',epsilon)  # get depolarizing noise model 
+dk_basis_gates = dk_noise_model.basis_gates                    # get basis gates from noise model
+
+#==== Perform a noise simulation =========================#
+backend        = Aer.get_backend('aer_simulator_statevector')  # use statevector simulator as backend
+transpiled_qc  = transpile(qc, backend)                        # transpile circuit
+result         = backend.run(transpiled_qc).result()           # run noisy simulation
+
+#==== Calculate noisy expectation values =================#
+psi_dk         = result.get_statevector(0)                     # get statevector from noisy circuit
+eval_dk        = psi_dk.expectation_value(A)                   # get noisy expectation value from projector A w.r.t. noisy psi
 
 
-
-########################################
-###  BUILD DEPOLARIZING NOISE MODEL  ###
-########################################
-
-dk_noise_model = get_dk_noise(gate_list_names, 'CNOT', epsilon)  # get depolarizing noise model 
 
 
