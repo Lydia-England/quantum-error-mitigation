@@ -7,6 +7,7 @@
 #########################
 
 import random 
+import statistics
 import numpy      as np
 import matplotlib as mpl
 
@@ -64,21 +65,21 @@ def get_qc_ub(n, d, single_gates):
     Each layer will thus have eiter n single-qubit gates or n/2 CNOTs.
     The output of the function is the resultant quantum circuit.
     """
-    qr = QuantumRegister(n, 'qr')        # create quantum register 
-    qc = QuantumCircuit(qr)              # create quantum circuit
-    qi = list(range(n))                  # list from 0:n
-    for layer in range(d):               # loop through all circuit layers (for layer in range (layers))
-        if layer%2 != 0:                 # odd layer: single qubit gates
-            for qubit in range(n):       # add random single qubit gates from list to each qubit
+    qr = QuantumRegister(n, 'qr')   # create quantum register 
+    qc = QuantumCircuit(qr)         # create quantum circuit
+    qi = list(range(n))             # list from 0:n
+    for layer in range(d):          # loop through all circuit layers (for layer in range (layers))
+        if layer%2 != 0:            # odd layer: single qubit gates
+            for qubit in range(n):  # add random single qubit gates from list to each qubit
                 qc.append(random.choice(single_gates), [qubit])  
-            qc.barrier()                 # add barrier at end of layer 
-        else:                            # even layer: cnot gates
-            rand_qi = random.shuffle(qi) # randomly shuffle list from 0:n
-            ctrl = rand_qi[:int(n/2) ]   # second half of randomly shuffled qubits is control qubits
-            test = rand_qi[ int(n/2):]   # first  half of randomly shuffled qubits is target  qubits
-            qc.cx(ctrl, test)            # apply CNOT (cx) gate to all ctrl-test pairs
-            qc.barrier()                 # add barrier at end of layer 
-    return qc                            # return the final quantum circuit
+            qc.barrier()            # add barrier at end of layer 
+        else:                       # even layer: cnot gates
+            random.shuffle(qi)      # randomly shuffle list from 0:n
+            ctrl = qi[:int(n/2)]    # second half of randomly shuffled qubits is control qubits
+            test = qi[int(n/2):]    # first  half of randomly shuffled qubits is target  qubits
+            qc.cx(ctrl, test)       # apply CNOT (cx) gate to all ctrl-test pairs
+            qc.barrier()            # add barrier at end of layer 
+    return qc                       # return the final quantum circuit
 
 
 #==== Define function to create depolarizing noise model ====#
@@ -101,6 +102,28 @@ def get_dk_noise(one_q_gates, two_q_gates, epsilon):
     return   dn_model                                          # return the final depolarizing noise model
 
 
+#==== Define function to get projector onto basis states with probabilities above the median value ====#
+def get_projector_geq_med(psi):
+    """
+    Define a function to obtain projector operator projecting onto basis states with probability above the median.
+    This projector depends on one argument: psi (statevector).
+    The probabilities are extracted from psi; the median value is extracted from psi. 
+    A list is created to store 1s and 0s associated with the probabilities for each state.
+    If the probability associated with a state is above or equal the median value, a 1 is added to a list.
+    If the probability associated with a state is below the median value, a 0 is added to a list. 
+    A new statevector is created from the resultant list, and the statevector is converted to an operator.
+    The output of this function is that operator, which projects onto the selected subset of basis states.
+    """
+    probs      = psi.probabilities()                    # get probabilities list from input statevector psi
+    median     = statistics.median(probs)               # identify median value of probabilities list
+    state_list = []                                     # initialize list to store 1s and 0s associated w/ basis state probabilities
+    for i in range(len(probs)):                         # loop through list of probabilities from psi
+        if   probs[i] <  median: state_list.append(0)   # basis state w/ probability less    than     median: add a 0 to the list
+        elif probs[i] >= median: state_list.append(1)   # basis state w/ probability greater or equal median: add a 1 to the list
+    projector  = Statevector(state_list).to_operator()  # create statevector from state list; convert to projector operator
+    return projector                                    # return the resultant projector operator
+
+
 
 ##########################
 ###  DEFINE VARIABLES  ###
@@ -112,8 +135,6 @@ n       = 6     # circuit depth
 epsilon = 0.01  # error rate
 M       = 4000  # total number of runs
 gamma_b = calc_sim_overhead(n, d, epsilon) # simulation overhead
-
-print('gamma_b = ', gamma_b)   # print \gamma_{\beta}
 
 #==== Instances of Gates ====#
 I        = IGate()   # Identity    gate
@@ -148,8 +169,8 @@ Build quantum circuit with function get_qc_ub().
 Quantum circuit has n qubits, d layers.
 Select 1-qubit gates from list: gate_list.
 """
-qc = get_qc_ub(n, d, gate_list)  # create ideal quantum circuit 
-qc.draw('mpl')                   # draw quantum circuit using matplotlib rendering
+qc = get_qc_ub(n, d, gate_list)      # create ideal quantum circuit 
+qc.draw('mpl')                       # draw quantum circuit using matplotlib rendering
 
 
 ###############################################
@@ -160,33 +181,14 @@ psi = psi.evolve(qc)                 # evolve the state by the quantum circuit
 psi.draw('latex')                    # draw using latex
 
 
-# Probabilities for measuring both qubits
-probs = psi.probabilities()
-print('probs: {}'.format(probs))
+##################################
+###  GET PROJECTOR OPERATOR A  ###
+##################################
 
-# Probabilities for measuring only qubit-0
-probs_qubit_0 = psi.probabilities([0])
-print('Qubit-0 probs: {}'.format(probs_qubit_0))
+A = get_projector_geq_med(psi)       # get projector A from statevector psi
 
-# Probabilities for measuring only qubit-1
-probs_qubit_1 = psi.probabilities([1])
-print('Qubit-1 probs: {}'.format(probs_qubit_1))
 
-# Probabilities for measuring only qubit-2
-probs_qubit_2 = psi.probabilities([2])
-print('Qubit-2 probs: {}'.format(probs_qubit_2))
 
-# Probabilities for measuring only qubit-3
-probs_qubit_3 = psi.probabilities([3])
-print('Qubit-3 probs: {}'.format(probs_qubit_3))
-
-# Probabilities for measuring only qubit-4
-probs_qubit_4 = psi.probabilities([4])
-print('Qubit-4 probs: {}'.format(probs_qubit_4))
-
-# Probabilities for measuring only qubit-5
-probs_qubit_5 = psi.probabilities([5])
-print('Qubit-5 probs: {}'.format(probs_qubit_5))
 
 
 
@@ -194,6 +196,6 @@ print('Qubit-5 probs: {}'.format(probs_qubit_5))
 ###  BUILD DEPOLARIZING NOISE MODEL  ###
 ########################################
 
-dk_noise_model = get_dk_noise(gate_list_names, 'CNOT', epsilon)
+dk_noise_model = get_dk_noise(gate_list_names, 'CNOT', epsilon)  # get depolarizing noise model 
 
 
