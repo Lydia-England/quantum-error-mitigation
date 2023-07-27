@@ -30,7 +30,7 @@ from   qiskit                     import (QuantumCircuit, ClassicalRegister, Qua
                                           BasicAer, Aer, execute)
 
 from   functions_pec              import (calc_sim_overhead, get_dk_noise, ideal_sim, noise_sim, calc_delta_zero, 
-                                          create_bins, find_bins, get_qc_ub, get_projector_geq_median)
+                                          create_bins, find_bin, get_qc_ub, get_projector_geq_median)
 
 ##########################
 ###  DEFINE VARIABLES  ###
@@ -140,6 +140,7 @@ print("Ideal expectation values are:",         eval_ideal_arr)
 print("Noisy expectation values are:",         eval_noise_arr)
 
 
+eval_init_bins = create_bins(0, int(max(eval_init_arr)), int(max(eval_init_arr))*2)
 
 
 fig, ax = plt.subplots()
